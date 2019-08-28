@@ -1,0 +1,19 @@
+chrome 66.0 for ios
+chrome 66.0 for android
+chrome 66.0
+chrome 65.0 for ios
+chrome 65.0 for android
+chrome 65.0
+chrome 64.0 for ios
+chrome 64.0 for android
+chrome 64.0
+chrome 63.0 for ios
+chrome 63.0 for android
+chrome 67.0 for android
+chrome 69.0
+edge 17.0
+firefox 60.0
+google search application 49.0
+mobile safari 10.0
+opera 53.0
+samsung browser 7.0
