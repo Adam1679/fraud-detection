@@ -1,3 +1,4 @@
 .idea
 .vscode
 *.csv
+__pycache__

@@ -10,11 +10,11 @@ import lightgbm as lgb
 import gc
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
-from .feature.feature import *
-
-
-# In[173]:
-
+from sklearn.pipeline import make_pipeline
+from src.feature.feature import *
+from multiprocessing import Pool
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 def reduce_mem_usage(df, verbose=True):
     numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
@@ -33,12 +33,22 @@ def reduce_mem_usage(df, verbose=True):
               format(end_mem, 100 * (start_mem - end_mem) / start_mem))
     return df
 
-DIR = "../ieee-fraud-detection"
-train_transaction = reduce_mem_usage(pd.read_csv(f'{DIR}/train_transaction.csv', index_col='TransactionID'))
-test_transaction = reduce_mem_usage(pd.read_csv(f'{DIR}/test_transaction.csv', index_col='TransactionID'))
-train_identity = reduce_mem_usage(pd.read_csv(f'{DIR}/train_identity.csv', index_col='TransactionID'))
-test_identity = reduce_mem_usage(pd.read_csv(f'{DIR}/test_identity.csv', index_col='TransactionID'))
-sample_submission = reduce_mem_usage(pd.read_csv(f'{DIR}/sample_submission.csv', index_col='TransactionID'))
+
+def load_data(file):
+    return reduce_mem_usage(pd.read_csv(file, index_col='TransactionID'))
+
+
+DIR = "./ieee-fraud-detection"
+
+files = [f'{DIR}/train_transaction.csv',
+         f'{DIR}/test_transaction.csv',
+         f'{DIR}/train_identity.csv',
+         f'{DIR}/test_identity.csv',
+         f'{DIR}/sample_submission.csv']
+
+
+with Pool() as pool:
+    train_transaction, test_transaction, train_identity, test_identity, sample_submission = pool.map(load_data, files)
 
 train = train_transaction.merge(train_identity, how='left', left_index=True, right_index=True)
 test = test_transaction.merge(test_identity, how='left', left_index=True, right_index=True)
@@ -83,7 +93,6 @@ train = A3.transform(train)
 test = A3.transform(test)
 
 # In[182]:
-
 
 # 未来数据？？？
 train['TransactionAmt_check'] = np.where(train['TransactionAmt'].isin(test['TransactionAmt']), 1, 0)
@@ -162,15 +171,11 @@ X_train, y_train = train, labels
 del train, labels
 gc.collect()
 
-# In[190]:
-
 
 lgb_submission = sample_submission.copy()
 lgb_submission['isFraud'] = 0
 n_fold = 5
 folds = KFold(n_fold)
-
-# In[ ]:
 
 
 for fold_n, (train_index, valid_index) in enumerate(folds.split(X_train)):
@@ -209,8 +214,6 @@ for fold_n, (train_index, valid_index) in enumerate(folds.split(X_train)):
     lgb_submission['isFraud'] = lgb_submission['isFraud'] + pred / n_fold
     del pred
     gc.collect()
-
-# In[ ]:
 
 
 lgb_submission.insert(0, "TransactionID", np.arange(3663549, 3663549 + 506691))
